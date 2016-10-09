@@ -75,8 +75,12 @@ router.delete('/favorites', authorize, (req, res, next) => {
   const { userId } = req.token;
   const { bookId } = req.body;
 
-  if (Number.isNaN(id)) {
-    return next();
+  // if (Number.isNaN(id)) {
+  //   return next();
+  // }
+
+ if (typeof bookId !== 'number') {
+    return next(boom.create(400, 'Book ID must be an integer'));
   }
 
   knex('favorites')
@@ -88,7 +92,6 @@ router.delete('/favorites', authorize, (req, res, next) => {
       }
 
       favorite = camelizeKeys(row);
-
       return knex('favorites')
         .where({ book_id: bookId, user_id: userId })
         .del()
