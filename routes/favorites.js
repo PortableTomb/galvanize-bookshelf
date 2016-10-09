@@ -68,31 +68,33 @@ router.post('/favorites', authorize, (req, res, next) => {
     });
 });
 
-router.delete('/favorites/:id', authorize, (req, res, next) => {
-  const id = Number.parseInt(req.params.id);
-    if (Number.isNaN(id)) {
-      return next();
-    }
+router.delete('/favorites', authorize, (req, res, next) => {
+  // const id = Number.parseInt(req.params.id);
 
   let favorite;
+  const { userId } = req.token;
+  const { bookId } = req.body;
+
+  if (Number.isNaN(id)) {
+    return next();
+  }
 
   knex('favorites')
-    .where('id', req.params.id)
+    .where({ book_id: bookId, user_id: userId })
     .first()
     .then((row) => {
-      // if (!row) {
-      //   throw boom.create(404, 'Not Found');
-      // }
+      if (!row) {
+        throw boom.create(404, 'Not Found');
+      }
 
       favorite = camelizeKeys(row);
 
       return knex('favorites')
+        .where({ book_id: bookId, user_id: userId })
         .del()
-        .where('id', req.params.id);
     })
     .then(() => {
       delete favorite.id;
-
       res.send(favorite);
     })
     .catch((err) => {
