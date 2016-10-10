@@ -45,7 +45,7 @@ router.get('/books/:id', (req, res, next) => {
     });
 });
 
-router.post('/favorites', (req, res, next) => {
+router.post('/books', (req, res, next) => {
   const { title, author, genre, description, coverUrl } = req.body;
   if (!title || !title.trim()) {
     return next(boom.create(400, 'Title must not be blank'));
