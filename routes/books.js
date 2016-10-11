@@ -1,4 +1,5 @@
 'use strict';
+
 /* eslint-disable max-len, camelcase */
 
 const boom = require('boom');
@@ -22,13 +23,13 @@ router.get('/books', (_req, res, next) => {
 });
 
 router.get('/books/:id', (req, res, next) => {
-    const id = Number.parseInt(req.params.id);
+  const id = Number.parseInt(req.params.id);
 
-    if (Number.isNaN(id)) {
-      return next();
-    }
+  if (Number.isNaN(id)) {
+    return next();
+  }
 
-    knex('books')
+  knex('books')
     .where('id', id)
     .first()
     .then((row) => {
@@ -47,6 +48,7 @@ router.get('/books/:id', (req, res, next) => {
 
 router.post('/books', (req, res, next) => {
   const { title, author, genre, description, coverUrl } = req.body;
+
   if (!title || !title.trim()) {
     return next(boom.create(400, 'Title must not be blank'));
   }
@@ -63,17 +65,18 @@ router.post('/books', (req, res, next) => {
     return next(boom.create(400, 'Cover URL must not be blank'));
   }
   const insertBook = { title, author, genre, description, coverUrl };
+
   knex('books')
     .insert(decamelizeKeys(insertBook), '*')
     .then((rows) => {
       const book = camelizeKeys(rows[0]);
+
       res.send(book);
     })
     .catch((err) => {
       next(err);
     });
 });
-
 
 router.patch('/books/:id', (req, res, next) => {
   const id = Number.parseInt(req.params.id);
@@ -96,20 +99,20 @@ router.patch('/books/:id', (req, res, next) => {
       const { description } = req.body;
       const { coverUrl } = req.body;
 
-      if(title) {
-      updateBook.title = title;
+      if (title) {
+        updateBook.title = title;
       }
-      if(author) {
-      updateBook.author = author;
+      if (author) {
+        updateBook.author = author;
       }
-      if(genre) {
-      updateBook.genre = genre;
+      if (genre) {
+        updateBook.genre = genre;
       }
-      if(title) {
-      updateBook.description = description;
+      if (title) {
+        updateBook.description = description;
       }
-      if(title) {
-      updateBook.coverUrl = coverUrl;
+      if (title) {
+        updateBook.coverUrl = coverUrl;
       }
 
       return knex('books')

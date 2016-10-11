@@ -23,16 +23,15 @@ router.post('/users', (req, res, next) => {
     return next(boom.create(400, 'Email must not be blank'));
   }
 
-
-    if (!password || password.length < 8) {
-      return next(boom.create(400, 'Password must be at least 8 characters long'));
-    }
+  if (!password || password.length < 8) {
+    return next(boom.create(400, 'Password must be at least 8 characters long'));
+  }
 
   knex('users')
   .where('email', email)
   .then((result) => {
     if (result.length > 0) {
-      return next(boom.create(400, 'Email already exists'))
+      return next(boom.create(400, 'Email already exists'));
     }
     bcrypt.hash(password, 12)
       .then((hashedPassword) => {
@@ -50,6 +49,6 @@ router.post('/users', (req, res, next) => {
         next(err);
       });
   });
-
 });
+
 module.exports = router;

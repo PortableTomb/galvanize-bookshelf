@@ -1,6 +1,5 @@
 'use strict';
 
-
 const boom = require('boom');
 const bcrypt = require('bcrypt-as-promised');
 const express = require('express');
@@ -39,7 +38,7 @@ router.post('/token', (req, res, next) => {
     return next(boom.create(400, 'Email must not be blank'));
   }
   if (!password || password.length < 8) {
-    return next(boom.create(400, 'Password must be at least 8 characters long'));
+    return next(boom.create(400, 'Password must not be blank'));
   }
 
   let user;
@@ -48,8 +47,8 @@ router.post('/token', (req, res, next) => {
     .where('email', email)
     .first()
     .then((row) => {
-      if(!row){
-        throw boom.create(400, 'Bad email or password')
+      if (!row) {
+        throw boom.create(400, 'Bad email or password');
       }
 
       user = camelizeKeys(row);
@@ -57,7 +56,7 @@ router.post('/token', (req, res, next) => {
       return bcrypt.compare(password, user.hashedPassword);
     })
 
-    .then (() => {
+    .then(() => {
       delete user.hashedPassword;
 
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
@@ -80,11 +79,10 @@ router.post('/token', (req, res, next) => {
     });
 });
 
-  router.delete('/token', (req, res, next) => {
-    res.clearCookie('token');
-    res.status(200);
-    res.send(true);
-  });
-
+router.delete('/token', (req, res, next) => {
+  res.clearCookie('token');
+  res.status(200);
+  res.send(true);
+});
 
 module.exports = router;

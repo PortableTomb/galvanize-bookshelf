@@ -45,36 +45,14 @@ router.get('/favorites', authorize, (req, res, next) => {
     });
 });
 
-// router.post('/favorites', authorize, (req, res, next) => {
-//   const { bookId } = req.body;
-//   const { userId } = req.token;
-//   const { id } = req.body;
-//
-//   if (Number.isNaN(Number.parseInt(bookId))) {
-//     return next(boom.create(400, 'ID must be an integer'));
-//   }
-//
-//   const insertFavorite = {id, bookId, userId};
-//   knex('favorites')
-//     .insert(decamelizeKeys(insertFavorite), '*')
-//     .then((rows) => {
-//       const favorite = camelizeKeys(rows[0]);
-//       // res.json({sucess: true, message: 'ok'});
-//       res.send(favorite);
-//     })
-//     .catch((err) => {
-//       next(err);
-//    });
-//  });
-
 router.post('/favorites', authorize, (req, res, next) => {
-    const { bookId } = req.body;
-    const favorite = { bookId, userId: req.token.userId };
+  const { bookId } = req.body;
+  const favorite = { bookId, userId: req.token.userId };
 
-    if (!bookId)
-      return next(boom.create(400, 'Book id must not be blank'));
-
-    knex('favorites')
+  if (!bookId) {
+    return next(boom.create(400, 'Book id must not be blank'));
+  }
+  knex('favorites')
       .insert(decamelizeKeys(favorite), '*')
       .then((rows) => {
         favorite.id = rows[0].id;
@@ -85,20 +63,13 @@ router.post('/favorites', authorize, (req, res, next) => {
       });
 });
 
-
 router.delete('/favorites', authorize, (req, res, next) => {
-  // const id = Number.parseInt(req.params.id);
-
   let favorite;
 
-  // if (Number.isNaN(id)) {
-  //   return next();
-  // }
+  const { userId } = req.token;
+  const { bookId } = req.body;
 
-    const { userId } = req.token;
-    const { bookId } = req.body;
-
- if (typeof bookId !== 'number') {
+  if (typeof bookId !== 'number') {
     return next(boom.create(400, 'Id must be an integer'));
   }
 
@@ -111,6 +82,7 @@ router.delete('/favorites', authorize, (req, res, next) => {
       }
 
       favorite = camelizeKeys(row);
+
       return knex('favorites')
         .where({ book_id: bookId, user_id: userId })
         .del()
