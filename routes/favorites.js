@@ -21,78 +21,115 @@ const authorize = function(req, res, next) {
   });
 };
 
-router.get('/favorites/:id', authorize, (req, res, next) => {
-  knex('favorites')
-    .where('book_id', req.query.bookId)
-    .then((favorites) => res.send(favorites.length > 0))
-    .catch((err) => next(err));
-});
+
 
 router.get('/favorites', authorize, (req, res, next) => {
-  const { userId } = req.token;
-
   knex('favorites')
-    .innerJoin('books', 'books.id', 'favorites.book_id')
-    .where('favorites.user_id', userId)
-    .orderBy('books.title', 'ASC')
-    .then((rows) => {
-      const favorites = camelizeKeys(rows);
+  .innerJoin('books', 'books.id', 'favorites.book_id')
+  .where('favorites.user_id', req.token.userId)
+  .orderBy('books.title', 'ASC')
+  .then((rows) => {
+    const favorites = camelizeKeys(rows);
 
-      res.send(favorites);
-    })
-    .catch((err) => {
-      next(err);
-    });
+    res.send(favorites);
+  })
+  .catch((err) => {
+    next(err);
+  });
+});
+
+router.get('/favorites/check', authorize, (req, res, next) => {
+
+  const bookId = Number.parseInt(req.query.bookId);
+
+  if (!Number.isInteger(bookId)) {
+    return next(boom.create(400, 'Book ID must be an integer'));
+  }
+
+  knex('books')
+  .innerJoin('favorites', 'favorites.book_id', 'books.id')
+  .where({
+    'favorites.book_id': bookId,
+    'favorites.user_id': req.token.userId
+  })
+  .first()
+  .then((row) => {
+    if (row) {
+      return res.send(true);
+    }
+
+    res.send(false);
+  })
+  .catch((err) => {
+    next(err)
+  });
 });
 
 router.post('/favorites', authorize, (req, res, next) => {
-  const { bookId } = req.body;
-  const favorite = { bookId, userId: req.token.userId };
+  const bookId = Number.parseInt(req.body.bookId);
 
-  if (!bookId) {
-    return next(boom.create(400, 'Book id must not be blank'));
+  if (!Number.isInteger(bookId)) {
+    return next(boom.create(400, 'Book ID must be an integer'));
   }
-  knex('favorites')
-      .insert(decamelizeKeys(favorite), '*')
-      .then((rows) => {
-        favorite.id = rows[0].id;
-        res.send(favorite);
-      })
-      .catch((err) => {
-        next(err);
-      });
+
+  knex('books')
+  .where('id', bookId)
+  .first()
+  .then((book) => {
+    if (!book) {
+      throw boom.create(404, 'Book not found');
+    }
+
+    const insertFavorite = { bookId, userId: req.token.userId };
+
+    return knex('favorites')
+    .insert(decamelizeKeys(insertFavorite), '*');
+  })
+  .then((rows) => {
+    const favorite = camelizeKeys(rows[0]);
+
+    res.send(favorite);
+  })
+  .catch((err) => {
+    next(err);
+  });
 });
 
 router.delete('/favorites', authorize, (req, res, next) => {
-  let favorite;
+  const bookId = Number.parseInt(req.body.bookId);
 
-  const { userId } = req.token;
-  const { bookId } = req.body;
-
-  if (typeof bookId !== 'number') {
-    return next(boom.create(400, 'Id must be an integer'));
+  if (!Number.isInteger(bookId)) {
+    return next(boom.create(400, 'Book ID must be an integer'));
   }
 
+  //eslint-disable-next-line camelcase
+  const clause = { book_id: bookId, user_id: req.token.userId };
+
+  let favorite;
+
   knex('favorites')
-    .where({ book_id: bookId, user_id: userId })
-    .first()
-    .then((row) => {
-      if (!row) {
-        throw boom.create(404, 'Not Found');
-      }
+  .where(clause)
+  .first()
+  .then((row) => {
+    if(!row) {
+      throw boom.create(404, 'Favorite not found');
+    }
 
-      favorite = camelizeKeys(row);
+    favorite = camelizeKeys(row);
 
-      return knex('favorites')
-        .where({ book_id: bookId, user_id: userId })
-        .del()
-    })
-    .then(() => {
-      delete favorite.id;
-      res.send(favorite);
-    })
-    .catch((err) => {
-      next(err);
-    });
+    return knex('favorites')
+    .del()
+    .where('id', favorite.id);
+  })
+  .then(() => {
+    delete favorite.id;
+
+    res.send(favorite);
+  })
+  .catch((err) => {
+    next(err);
+  });
 });
+
+
 module.exports = router;
